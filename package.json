@@ -32,7 +32,8 @@
     "reset": "git clean -dfx && git reset --hard && npm i",
     "clean": "trash build test",
     "all": "run-s reset test cov:check doc:html",
-    "prepare-release": "run-s all version doc:publish"
+    "prepare-release": "run-s all version doc:publish",
+    "postinstall": "rm -f node_modules/loom-js/node_modules/web3/*.d.ts && rm -f node_modules/loom-js/dist/helpers.d.ts"
   },
   "scripts-info": {
     "info": "Display information about the package scripts",
@@ -51,9 +52,14 @@
     "node": ">=8.9"
   },
   "dependencies": {
-    "sha.js": "^2.4.11"
+    "lokijs": "^1.5.6",
+    "loom-js": "^1.47.0",
+    "rxjs": "^6.4.0",
+    "sha.js": "^2.4.11",
+    "web3": "^1.0.0-beta.52"
   },
   "devDependencies": {
+    "@types/lokijs": "^1.5.2",
     "ava": "1.0.0-beta.7",
     "codecov": "^3.1.0",
     "cz-conventional-changelog": "^2.1.0",
