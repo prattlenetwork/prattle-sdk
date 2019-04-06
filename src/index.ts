@@ -6,11 +6,11 @@ import {PrattleNetwork} from "./contracts/PrattleNetwork";
 
 export class PrattleSDK {
     mainContract: PrattleNetwork;
-    public storage: Storage = new Storage();
+    public storage: Storage;
     private web3: Web3;
 
-    constructor(private mainContractAddress: string) {
-
+    constructor(private mainContractAddress: string, platform: ("NATIVESCRIPT" | "NODEJS" | "BROWSER")) {
+        this.storage = new Storage(platform);
     }
 
     public async initKeys(): Promise<Key> {

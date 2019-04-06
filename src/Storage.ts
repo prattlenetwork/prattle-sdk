@@ -14,8 +14,9 @@ export class Storage {
     private privateKey: BehaviorSubject<Key> = new BehaviorSubject<Key>(null);
     private userAddress: BehaviorSubject<string> = new BehaviorSubject(null);
 
-    constructor() {
+    constructor(platform: ("NATIVESCRIPT" | "NODEJS" | "BROWSER")) {
         this.db = new Loki('Prattle', {
+            env: platform,
             autoload: true,
             autoloadCallback: () => {
                 this.init();
