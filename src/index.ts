@@ -3,6 +3,16 @@ import {Key, Storage} from "./Storage";
 
 import {PrattleNetwork} from "./contracts/PrattleNetwork";
 
+export {BaseContract} from "./contracts/BaseContract";
+export {Post} from "./contracts/Post";
+export {PrattleNetwork} from "./contracts/PrattleNetwork";
+export {UserProfile} from "./contracts/UserProfile";
+export {Users} from "./contracts/Users";
+
+export {Crypto} from "./Crypto";
+
+
+
 
 export class PrattleSDK {
     mainContract: PrattleNetwork;

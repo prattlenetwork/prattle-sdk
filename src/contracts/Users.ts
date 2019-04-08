@@ -120,7 +120,6 @@ export class Users extends BaseContract {
     }
 
     async init(): Promise<void> {
-
       const postAddresses = await this.getPublicPostAddresses();
       await this.loadPosts(postAddresses);
     }
@@ -133,6 +132,7 @@ export class Users extends BaseContract {
 
       return post;
     }));
+    console.log('loaded all posts', posts);
     this.posts.next(posts);
   }
 
@@ -152,9 +152,12 @@ export class Users extends BaseContract {
     return (this.model as BehaviorSubject<UsersModel>).asObservable();
   }
 
+  getPublicPosts(): Observable<Post[]> {
+    return this.posts.asObservable();
+  }
+
 }
 
 export interface UsersModel extends BaseModel {
   userAddresses: string[];
-
 }

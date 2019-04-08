@@ -1,7 +1,7 @@
 import {CryptoUtils, LocalAddress} from "loom-js";
 
 
-export class  Crypto {
+export class Crypto {
     public static generatePrivateKey(): Uint8Array {
         return CryptoUtils.generatePrivateKey();
     }

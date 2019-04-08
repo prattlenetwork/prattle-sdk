@@ -67,7 +67,7 @@ const ABI = [
 ];
 
 export class PrattleNetwork extends BaseContract {
-    private users: Users;
+  private users: BehaviorSubject<Users> = new BehaviorSubject<Users>(null);
 
     constructor(contractAddress: string, web3: Web3, userAddress: string) {
         super(ABI, contractAddress, web3, userAddress);
@@ -86,13 +86,19 @@ export class PrattleNetwork extends BaseContract {
 
         //TODO: test
       console.log('usersAddress', prattleNetworkModel.usersAddress);
-      this.users = new Users(prattleNetworkModel.usersAddress, this.web3, this.userAddress);
-        console.log('users', this.users);
-        await this.users.init();
+      const users = new Users(prattleNetworkModel.usersAddress, this.web3, this.userAddress);
+      await users.init();
+      console.log('initialized users');
+      this.users.next(users);
+
     }
 
   getModel(): Observable<PrattleNetworkModel> {
     return (this.model as BehaviorSubject<PrattleNetworkModel>).asObservable();
+  }
+
+  getUsers(): Observable<Users> {
+    return this.users.asObservable();
   }
 
 }
