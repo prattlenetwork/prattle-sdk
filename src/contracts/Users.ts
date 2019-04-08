@@ -1,5 +1,7 @@
-import {BaseContract} from "./BaseContract";
+import {BaseContract, BaseModel} from "./BaseContract";
 import Web3 from "web3";
+import {BehaviorSubject, Observable} from "rxjs";
+import {Post} from "./Post";
 
 const ABI = [
     {
@@ -110,12 +112,49 @@ const ABI = [
 ];
 
 export class Users extends BaseContract {
+  private posts: BehaviorSubject<Post[]> = new BehaviorSubject<Post[]>([]);
+
     constructor(contractAddress: string, web3: Web3, userAddress: string) {
         super(ABI, contractAddress, web3, userAddress);
+      this.model = new BehaviorSubject<UsersModel>(null);
     }
 
     async init(): Promise<void> {
 
+      const postAddresses = await this.getPublicPostAddresses();
+      await this.loadPosts(postAddresses);
     }
+
+  async loadPosts(addresses: string[]) {
+    const posts = await Promise.all(addresses.map(async postAddress => {
+      const post = new Post(postAddress, this.web3, this.userAddress);
+      //TODO: load content, maybe init later
+      await post.init();
+
+      return post;
+    }));
+    this.posts.next(posts);
+  }
+
+  async getPublicPostAddresses(): Promise<string[]> {
+    const events = await this.contract.getPastEvents('Posted', {
+      fromBlock: 0,
+      toBlock: 'latest'
+    });
+
+
+    return events.map(event => {
+      return event.returnValues.post;
+    });
+  }
+
+  getModel(): Observable<UsersModel> {
+    return (this.model as BehaviorSubject<UsersModel>).asObservable();
+  }
+
+}
+
+export interface UsersModel extends BaseModel {
+  userAddresses: string[];
 
 }

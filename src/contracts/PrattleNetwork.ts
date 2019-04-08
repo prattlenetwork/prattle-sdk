@@ -1,6 +1,7 @@
-import {BaseContract} from "./BaseContract";
+import {BaseContract, BaseModel} from "./BaseContract";
 import Web3 from "web3";
 import {Users} from "./Users";
+import {BehaviorSubject, Observable} from "rxjs";
 
 const ABI = [
     {
@@ -70,15 +71,32 @@ export class PrattleNetwork extends BaseContract {
 
     constructor(contractAddress: string, web3: Web3, userAddress: string) {
         super(ABI, contractAddress, web3, userAddress);
+      this.model = new BehaviorSubject<PrattleNetworkModel>(null);
     }
 
     async init(): Promise<void> {
-        const usersAddress = await this.contract.methods.users().call();
+      console.log('init maincontract..');
+      const prattleNetworkModel: PrattleNetworkModel = {
+        address: this.userAddress,
+        owner: await this.contract.methods.owner().call(),
+        usersAddress: await this.contract.methods.users().call()
+      };
+      console.log('maincontract model: ', prattleNetworkModel);
+      this.model.next(prattleNetworkModel);
+
         //TODO: test
-        console.log('usersAddress', usersAddress);
-        this.users = new Users(usersAddress, this.web3, this.userAddress);
+      console.log('usersAddress', prattleNetworkModel.usersAddress);
+      this.users = new Users(prattleNetworkModel.usersAddress, this.web3, this.userAddress);
         console.log('users', this.users);
         await this.users.init();
     }
 
+  getModel(): Observable<PrattleNetworkModel> {
+    return (this.model as BehaviorSubject<PrattleNetworkModel>).asObservable();
+  }
+
+}
+
+export interface PrattleNetworkModel extends BaseModel {
+  usersAddress: string;
 }
