@@ -1,7 +1,7 @@
 import {BaseContract, BaseModel} from "./BaseContract";
-import Web3 from "web3";
 import {Users} from "./Users";
 import {BehaviorSubject, Observable} from "rxjs";
+import {PrattleSDK} from "../index";
 
 const ABI = [
     {
@@ -67,42 +67,42 @@ const ABI = [
 ];
 
 export class PrattleNetwork extends BaseContract {
-  private users: BehaviorSubject<Users> = new BehaviorSubject<Users>(null);
+    private users: BehaviorSubject<Users> = new BehaviorSubject<Users>(null);
 
-    constructor(contractAddress: string, web3: Web3, userAddress: string) {
-        super(ABI, contractAddress, web3, userAddress);
-      this.model = new BehaviorSubject<PrattleNetworkModel>(null);
+    constructor(contractAddress: string) {
+        super(ABI, contractAddress);
+        this.model = new BehaviorSubject<PrattleNetworkModel>(null);
     }
 
     async init(): Promise<void> {
-      console.log('init maincontract..');
-      const prattleNetworkModel: PrattleNetworkModel = {
-        address: this.userAddress,
-        owner: await this.contract.methods.owner().call(),
-        usersAddress: await this.contract.methods.users().call()
-      };
-      console.log('maincontract model: ', prattleNetworkModel);
-      this.model.next(prattleNetworkModel);
+        console.log('init maincontract..');
+        const prattleNetworkModel: PrattleNetworkModel = {
+            address: PrattleSDK.userAddress,
+            owner: await this.contract.methods.owner().call(),
+            usersAddress: await this.contract.methods.users().call()
+        };
+        console.log('maincontract model: ', prattleNetworkModel);
+        this.model.next(prattleNetworkModel);
 
         //TODO: test
-      console.log('usersAddress', prattleNetworkModel.usersAddress);
-      const users = new Users(prattleNetworkModel.usersAddress, this.web3, this.userAddress);
-      await users.init();
-      console.log('initialized users');
-      this.users.next(users);
+        console.log('usersAddress', prattleNetworkModel.usersAddress);
+        const users = new Users(prattleNetworkModel.usersAddress);
+        await users.init();
+        console.log('initialized users');
+        this.users.next(users);
 
     }
 
-  getModel(): Observable<PrattleNetworkModel> {
-    return (this.model as BehaviorSubject<PrattleNetworkModel>).asObservable();
-  }
+    getModel(): Observable<PrattleNetworkModel> {
+        return (this.model as BehaviorSubject<PrattleNetworkModel>).asObservable();
+    }
 
-  getUsers(): Observable<Users> {
-    return this.users.asObservable();
-  }
+    getUsers(): Observable<Users> {
+        return this.users.asObservable();
+    }
 
 }
 
 export interface PrattleNetworkModel extends BaseModel {
-  usersAddress: string;
+    usersAddress: string;
 }

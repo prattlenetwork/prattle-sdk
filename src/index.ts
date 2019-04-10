@@ -12,22 +12,21 @@ export {Users} from "./contracts/Users";
 export {Crypto} from "./Crypto";
 
 
-
-
 export class PrattleSDK {
     mainContract: PrattleNetwork;
-    public storage: Storage;
-    private web3: Web3;
+    public static storage: Storage;
+    public static web3: Web3;
+    public static userAddress: string;
 
     constructor(private mainContractAddress: string, platform: ("NATIVESCRIPT" | "NODEJS" | "BROWSER")) {
-        this.storage = new Storage(platform);
+        PrattleSDK.storage = new Storage(platform);
     }
 
     public async initKeys(): Promise<Key> {
         return new Promise<Key>(resolve => {
-            this.storage.getInitialized().subscribe(initialized => {
+            PrattleSDK.storage.getInitialized().subscribe(initialized => {
                 if (initialized) {
-                    this.storage.getPrivateKey().subscribe(privateKey => {
+                    PrattleSDK.storage.getPrivateKey().subscribe(privateKey => {
                         resolve(privateKey);
                     });
                 }
@@ -36,13 +35,14 @@ export class PrattleSDK {
     }
 
     public async init(web3: Web3) {
-        this.web3 = web3;
-        this.storage.getInitialized().subscribe(initialized => {
+        PrattleSDK.web3 = web3;
+        PrattleSDK.storage.getInitialized().subscribe(initialized => {
             if (initialized) {
-                this.storage.getUserAddress().subscribe(async userAddress => {
+                PrattleSDK.storage.getUserAddress().subscribe(async userAddress => {
                     if (userAddress) {
+                        PrattleSDK.userAddress = userAddress;
                         console.log('address:', userAddress);
-                        this.mainContract = new PrattleNetwork(this.mainContractAddress, this.web3, userAddress);
+                        this.mainContract = new PrattleNetwork(this.mainContractAddress);
                         await this.mainContract.init();
                     }
                 });
