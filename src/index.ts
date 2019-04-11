@@ -2,6 +2,7 @@ import Web3 from "web3";
 import {Key, Storage} from "./Storage";
 
 import {PrattleNetwork} from "./contracts/PrattleNetwork";
+import {BehaviorSubject, Observable} from "rxjs";
 
 export {BaseContract} from "./contracts/BaseContract";
 export {Post} from "./contracts/Post";
@@ -13,7 +14,7 @@ export {Crypto} from "./Crypto";
 
 
 export class PrattleSDK {
-    mainContract: PrattleNetwork;
+    private mainContract: BehaviorSubject<PrattleNetwork> = new BehaviorSubject<PrattleNetwork>(null);
     public static storage: Storage;
     public static web3: Web3;
     public static userAddress: string;
@@ -42,13 +43,18 @@ export class PrattleSDK {
                     if (userAddress) {
                         PrattleSDK.userAddress = userAddress;
                         console.log('address:', userAddress);
-                        this.mainContract = new PrattleNetwork(this.mainContractAddress);
-                        await this.mainContract.init();
+                        const prattle = new PrattleNetwork(this.mainContractAddress);
+                        await prattle.init();
+                        this.mainContract.next(prattle);
                     }
                 });
             }
         });
 
+    }
+
+    public getMainContract(): Observable<PrattleNetwork> {
+        return this.mainContract.asObservable();
     }
 }
 

@@ -125,16 +125,26 @@ export class Users extends BaseContract {
         const cachedPosts = PrattleSDK.storage.getPublicPosts();
         if (cachedPosts.postAddresses.length > 0) {
             await this.loadPosts(cachedPosts.postAddresses);
+            console.log('LOADED cached posts from block: ', cachedPosts.blockNumber, cachedPosts.postAddresses);
         }
-        console.log('LOADED cached posts from block: ', cachedPosts.blockNumber, cachedPosts.postAddresses);
 
         const currentBlock: number = await PrattleSDK.web3.eth.getBlockNumber();
         const postAddresses = await this.getPublicPostAddresses(cachedPosts.blockNumber);
         await this.loadPosts(postAddresses);
-        PrattleSDK.storage.addOrUpdatePublicPosts({
-            blockNumber: currentBlock,
-            postAddresses: postAddresses
-        });
+
+        setTimeout(() => {
+            console.log('DELAYED UPDATE');
+            const allPostAddresses = cachedPosts.postAddresses.concat(postAddresses.filter(address => {
+                return cachedPosts.postAddresses.indexOf(address) < 0;
+            }));
+
+            PrattleSDK.storage.addOrUpdatePublicPosts({
+                blockNumber: currentBlock,
+                postAddresses: allPostAddresses
+            });
+        }, 1000);
+
+
 
         console.log('UPDATED cached posts from block:', currentBlock, postAddresses)
     }
@@ -158,6 +168,7 @@ export class Users extends BaseContract {
 
 
         this.posts.next(allPosts);
+        console.log('UPDATE POSTS SDK');
     }
 
 
