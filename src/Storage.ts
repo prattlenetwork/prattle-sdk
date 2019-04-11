@@ -11,6 +11,7 @@ export class Storage {
     private keys: Collection<Key>;
     private profiles: Collection<UserProfileModel>;
     private posts: Collection<PostModel>;
+    private publicPosts: Collection<PublicPosts>;
     private initialized: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
     private privateKey: BehaviorSubject<Key> = new BehaviorSubject<Key>(null);
@@ -30,7 +31,7 @@ export class Storage {
         this.initialized.subscribe((value => {
             if (value) {
                 this.privateKey.next(this.keys.findOne({type: KeyType.PrivateKey}));
-                const publicKey = Crypto.getPublicKey(Uint8Array.from(this.privateKey.value.value));
+                const publicKey = Crypto.getPublicKey(Uint8Array.from(this.privateKey.value.value as number[]));
                 this.userAddress.next(Crypto.getUserAddress(publicKey));
                 console.log('storage initialized');
             }
@@ -45,6 +46,10 @@ export class Storage {
                 type: KeyType.PrivateKey,
                 value: Array.from(Crypto.generatePrivateKey())
             });
+            this.keys.insert({
+                type: KeyType.LastUpdatedBlockNumber,
+                value: 0
+            });
         }
 
         this.profiles = this.db.getCollection('profiles');
@@ -55,6 +60,15 @@ export class Storage {
         this.posts = this.db.getCollection('posts');
         if (!this.posts) {
             this.posts = this.db.addCollection('posts', {unique: ['address']});
+        }
+
+        this.publicPosts = this.db.getCollection('publicPosts');
+        if (!this.publicPosts) {
+            this.publicPosts = this.db.addCollection('publicPosts');
+            this.publicPosts.insert({
+                blockNumber: 0,
+                postAddresses: []
+            })
         }
 
         this.initialized.next(true);
@@ -79,6 +93,10 @@ export class Storage {
 
     getPost(address: string): PostModel {
         return this.posts.findOne({address: address.toLowerCase()});
+    }
+
+    getPublicPosts(): PublicPosts {
+        return this.publicPosts.findOne({blockNumber: {'$gte': 0}});
     }
 
 
@@ -124,14 +142,30 @@ export class Storage {
 
     }
 
+    addOrUpdatePublicPosts(publicPosts: PublicPosts) {
+        console.log('add public posts', publicPosts);
+        const lastUpdated = this.keys.findOne({type: KeyType.LastUpdatedBlockNumber}).value as number;
+        console.log('last updated', lastUpdated); // TODO: fix, is 0
+        if (publicPosts.blockNumber > lastUpdated && publicPosts.postAddresses.length > 0) {
+            this.publicPosts.clear();
+            this.publicPosts.insert(publicPosts);
+            console.log('inserted public posts');
+        }
+    }
+
 
 }
 
 export enum KeyType {
-    PrivateKey
+    PrivateKey, LastUpdatedBlockNumber
 }
 
 export interface Key {
-    type: KeyType,
-    value: number[]
+    type: KeyType;
+    value: number[] | number;
+}
+
+export interface PublicPosts {
+    blockNumber: number;
+    postAddresses: string[];
 }

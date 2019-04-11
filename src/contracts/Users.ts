@@ -1,6 +1,8 @@
 import {BaseContract, BaseModel} from "./BaseContract";
 import {BehaviorSubject, Observable} from "rxjs";
 import {Post} from "./Post";
+import {PrattleSDK} from "../index";
+import {PublicPosts} from "../Storage";
 
 const ABI = [
     {
@@ -111,6 +113,7 @@ const ABI = [
 ];
 
 export class Users extends BaseContract {
+
     private posts: BehaviorSubject<Post[]> = new BehaviorSubject<Post[]>([]);
 
     constructor(contractAddress: string) {
@@ -119,8 +122,21 @@ export class Users extends BaseContract {
     }
 
     async init(): Promise<void> {
-        const postAddresses = await this.getPublicPostAddresses();
+        const cachedPosts = PrattleSDK.storage.getPublicPosts();
+        if (cachedPosts.postAddresses.length > 0) {
+            await this.loadPosts(cachedPosts.postAddresses);
+        }
+        console.log('LOADED cached posts from block: ', cachedPosts.blockNumber, cachedPosts.postAddresses);
+
+        const currentBlock: number = await PrattleSDK.web3.eth.getBlockNumber();
+        const postAddresses = await this.getPublicPostAddresses(cachedPosts.blockNumber);
         await this.loadPosts(postAddresses);
+        PrattleSDK.storage.addOrUpdatePublicPosts({
+            blockNumber: currentBlock,
+            postAddresses: postAddresses
+        });
+
+        console.log('UPDATED cached posts from block:', currentBlock, postAddresses)
     }
 
     async loadPosts(addresses: string[]) {
@@ -132,12 +148,22 @@ export class Users extends BaseContract {
             return post;
         }));
         console.log('loaded all posts', posts);
-        this.posts.next(posts);
+
+
+        const allPosts = this.posts.value.concat(posts.filter(post => {
+            return this.posts.value.indexOf(post) < 0;
+        }));
+
+        console.log('merged Posts', allPosts);
+
+
+        this.posts.next(allPosts);
     }
 
-    async getPublicPostAddresses(): Promise<string[]> {
+
+    async getPublicPostAddresses(sinceBlock: number): Promise<string[]> {
         const events = await this.contract.getPastEvents('Posted', {
-            fromBlock: 0,
+            fromBlock: sinceBlock,
             toBlock: 'latest'
         });
 
@@ -158,5 +184,5 @@ export class Users extends BaseContract {
 }
 
 export interface UsersModel extends BaseModel {
-    userAddresses: string[];
+    publicPosts: PublicPosts;
 }
