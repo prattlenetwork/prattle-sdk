@@ -41,15 +41,12 @@ export class Storage {
     init() {
         this.keys = this.db.getCollection('keys');
         if (!this.keys) {
-            this.keys = this.db.addCollection('keys');
+            this.keys = this.db.addCollection('keys', {unique: ['type']});
             this.keys.insert({
                 type: KeyType.PrivateKey,
                 value: Array.from(Crypto.generatePrivateKey())
             });
-            this.keys.insert({
-                type: KeyType.LastUpdatedBlockNumber,
-                value: 0
-            });
+            this.setLastUpdatedBlock(0);
         }
 
         this.profiles = this.db.getCollection('profiles');
@@ -139,18 +136,37 @@ export class Storage {
             model: post,
             cacheHit: false
         };
-
     }
 
     addOrUpdatePublicPosts(publicPosts: PublicPosts) {
         console.log('add public posts', publicPosts);
-        const lastUpdated = this.keys.findOne({type: KeyType.LastUpdatedBlockNumber}).value as number;
-        console.log('last updated', lastUpdated); // TODO: fix, is 0
+        const lastUpdated = this.getLastUpdatedBlock();
+        console.log('last updated', lastUpdated);
         if (publicPosts.blockNumber > lastUpdated && publicPosts.postAddresses.length > 0) {
             this.publicPosts.clear();
             this.publicPosts.insert(publicPosts);
+            this.setLastUpdatedBlock(publicPosts.blockNumber);
             console.log('inserted public posts');
         }
+    }
+
+
+    private setLastUpdatedBlock(blockNumber: number) {
+        const lastUpdated = this.keys.findOne({type: KeyType.LastUpdatedBlockNumber});
+        if (lastUpdated) {
+            lastUpdated.value = blockNumber;
+            this.keys.update(lastUpdated);
+        } else {
+            this.keys.insert({
+                type: KeyType.LastUpdatedBlockNumber,
+                value: blockNumber
+            });
+        }
+        console.log('updated last block: ', blockNumber);
+    }
+
+    private getLastUpdatedBlock(): number {
+        return this.keys.findOne({type: KeyType.LastUpdatedBlockNumber}).value as number;
     }
 
 
