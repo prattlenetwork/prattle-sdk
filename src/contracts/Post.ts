@@ -347,9 +347,58 @@ const ABI: any = [
 
 export class Post extends BaseContract {
 
+    private comments: BehaviorSubject<Post[]> = new BehaviorSubject<Post[]>([]);
+
+
     constructor(contractAddress: string) {
         super(ABI, contractAddress);
         this.model = new BehaviorSubject<PostModel>(null);
+    }
+
+    async init(): Promise<void> {
+        console.log('init post..');
+        const {model: postModel, cacheHit: cached} = await PrattleSDK.storage.getOrLoadPost(this.contract);
+
+        console.log('post model: ', postModel);
+        this.model.next(postModel);
+        if (!cached) {
+            console.log('add or update post');
+            PrattleSDK.storage.addOrUpdatePost(postModel);
+        }
+
+        // load comments
+        setTimeout(async () => {
+            console.log('DELAYED COMMENTS');
+            // TODO: FIX THIS
+            await this.loadComments();
+        }, 5000);
+
+    }
+
+    async loadComments() {
+        const cachedPosts = PrattleSDK.storage.getComments(this.contract.address);
+        if (cachedPosts.postAddresses.length > 0) {
+            await this.loadPosts(cachedPosts.postAddresses);
+            console.log('LOADED cached comments from block: ', cachedPosts.blockNumber, cachedPosts.postAddresses);
+        }
+
+        const currentBlock: number = await PrattleSDK.web3.eth.getBlockNumber();
+        const postAddresses = await this.getCommentAddresses(cachedPosts.blockNumber);
+        await this.loadPosts(postAddresses);
+
+
+        setTimeout(() => {
+            console.log('DELAYED COMMENT UPDATE');
+            const allPostAddresses = cachedPosts.postAddresses.concat(postAddresses.filter(address => {
+                return cachedPosts.postAddresses.indexOf(address) < 0;
+            }));
+
+            PrattleSDK.storage.addOrUpdateCachedPosts({
+                parent: this.contract.address,
+                blockNumber: currentBlock,
+                postAddresses: allPostAddresses
+            });
+        }, 1000);
     }
 
     public static async loadModel(contract: Contract): Promise<PostModel> {
@@ -374,21 +423,58 @@ export class Post extends BaseContract {
         return postModel;
     }
 
-    async init(): Promise<void> {
-        console.log('init post..');
-        const {model: postModel, cacheHit: cached} = await PrattleSDK.storage.getOrLoadPost(this.contract);
 
-        console.log('post model: ', postModel);
-        this.model.next(postModel);
-        if (!cached) {
-            console.log('add or update post');
-            PrattleSDK.storage.addOrUpdatePost(postModel);
-        }
-    }
 
     getModel(): Observable<PostModel> {
         return (this.model as BehaviorSubject<PostModel>).asObservable();
     }
+
+
+    async loadPosts(addresses: string[]) {
+        const posts = await Promise.all(addresses.map(async postAddress => {
+            const post = new Post(postAddress);
+            //TODO: load content, maybe init later
+            await post.init();
+
+            return post;
+        }));
+        console.log('loaded all comments', posts);
+
+
+        const allPosts = this.comments.value.concat(posts.filter(post => {
+            return this.comments.value.indexOf(post) < 0;
+        }));
+
+        console.log('merged comments', allPosts);
+
+
+        this.comments.next(allPosts);
+        console.log('UPDATE comments SDK');
+    }
+
+
+    async getCommentAddresses(sinceBlock: number): Promise<string[]> {
+        const events = await this.contract.getPastEvents('CommentPosted', {
+            fromBlock: sinceBlock,
+            toBlock: 'latest'
+        });
+
+
+        return events.map(event => {
+            return event.returnValues.post;
+        });
+    }
+
+
+
+
+
+
+
+
+
+
+
 
 }
 

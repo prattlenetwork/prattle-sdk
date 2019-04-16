@@ -11,7 +11,7 @@ export class Storage {
     private keys: Collection<Key>;
     private profiles: Collection<UserProfileModel>;
     private posts: Collection<PostModel>;
-    private publicPosts: Collection<PublicPosts>;
+    private cachedPosts: Collection<CachedPosts>;
     private initialized: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
     private privateKey: BehaviorSubject<Key> = new BehaviorSubject<Key>(null);
@@ -59,13 +59,9 @@ export class Storage {
             this.posts = this.db.addCollection('posts', {unique: ['address']});
         }
 
-        this.publicPosts = this.db.getCollection('publicPosts');
-        if (!this.publicPosts) {
-            this.publicPosts = this.db.addCollection('publicPosts');
-            this.publicPosts.insert({
-                blockNumber: 0,
-                postAddresses: []
-            })
+        this.cachedPosts = this.db.getCollection('cachedPosts');
+        if (!this.cachedPosts) {
+            this.cachedPosts = this.db.addCollection('cachedPosts', {unique: ['parent']});
         }
 
         this.initialized.next(true);
@@ -90,10 +86,6 @@ export class Storage {
 
     getPost(address: string): PostModel {
         return this.posts.findOne({address: address.toLowerCase()});
-    }
-
-    getPublicPosts(): PublicPosts {
-        return this.publicPosts.findOne({blockNumber: {'$gte': 0}});
     }
 
 
@@ -138,16 +130,37 @@ export class Storage {
         };
     }
 
-    addOrUpdatePublicPosts(publicPosts: PublicPosts) {
-        console.log('add public posts', publicPosts);
+    addOrUpdateCachedPosts(cachedPosts: CachedPosts) {
+        console.log('add comment posts', cachedPosts);
         const lastUpdated = this.getLastUpdatedBlock();
-        console.log('last updated', lastUpdated);
-        if (publicPosts.blockNumber > lastUpdated && publicPosts.postAddresses.length > 0) {
-            this.publicPosts.clear();
-            this.publicPosts.insert(publicPosts);
-            this.setLastUpdatedBlock(publicPosts.blockNumber);
-            console.log('inserted public posts');
+        console.log('last comment updated', lastUpdated);
+        if (cachedPosts.blockNumber > lastUpdated && cachedPosts.postAddresses.length > 0) {
+            // update existing
+            const cached = this.cachedPosts.findOne({parent: cachedPosts.parent});
+            if (cached) {
+                cached.blockNumber = cachedPosts.blockNumber;
+                cached.postAddresses = cachedPosts.postAddresses;
+                this.cachedPosts.update(cached);
+            } else {
+                this.cachedPosts.insert(cachedPosts);
+            }
+
+            this.setLastUpdatedBlock(cachedPosts.blockNumber);
+            console.log('inserted comment posts');
         }
+    }
+
+    getPublicPosts(): CachedPosts {
+        return this.getComments('PUBLIC');
+    }
+
+    getComments(address: string): CachedPosts {
+        const cached = this.cachedPosts.findOne({parent: address});
+        return cached ? cached : {
+            parent: address,
+            postAddresses: [],
+            blockNumber: 0
+        };
     }
 
 
@@ -181,7 +194,8 @@ export interface Key {
     value: number[] | number;
 }
 
-export interface PublicPosts {
+export interface CachedPosts {
+    parent: string;
     blockNumber: number;
     postAddresses: string[];
 }

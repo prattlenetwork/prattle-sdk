@@ -2,7 +2,7 @@ import {BaseContract, BaseModel} from "./BaseContract";
 import {BehaviorSubject, Observable} from "rxjs";
 import {Post} from "./Post";
 import {PrattleSDK} from "../index";
-import {PublicPosts} from "../Storage";
+import {CachedPosts} from "../Storage";
 
 const ABI = [
     {
@@ -138,7 +138,8 @@ export class Users extends BaseContract {
                 return cachedPosts.postAddresses.indexOf(address) < 0;
             }));
 
-            PrattleSDK.storage.addOrUpdatePublicPosts({
+            PrattleSDK.storage.addOrUpdateCachedPosts({
+                parent: 'PUBLIC',
                 blockNumber: currentBlock,
                 postAddresses: allPostAddresses
             });
@@ -195,5 +196,5 @@ export class Users extends BaseContract {
 }
 
 export interface UsersModel extends BaseModel {
-    publicPosts: PublicPosts;
+    publicPosts: CachedPosts;
 }
