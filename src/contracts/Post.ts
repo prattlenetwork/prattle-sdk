@@ -1,6 +1,5 @@
-import {BaseContract, BaseModel} from "./BaseContract";
+import {BaseContract, BaseModel, PrattleSDK} from "../internal";
 import {BehaviorSubject, Observable} from "rxjs";
-import {PrattleSDK} from "../index";
 import {Contract} from 'web3-eth-contract';
 
 const ABI: any = [
@@ -490,4 +489,10 @@ export interface PostModel extends BaseModel {
     parent: string;
     isSharing: boolean;
     myRating: number;
+}
+
+export interface CachedPosts {
+    parent: string;
+    blockNumber: number;
+    postAddresses: string[];
 }

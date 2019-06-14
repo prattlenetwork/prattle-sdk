@@ -1,8 +1,6 @@
 import Loki from 'lokijs';
 import {BehaviorSubject, Observable} from "rxjs";
-import {Crypto} from "./Crypto";
-import {UserProfileModel} from "./contracts/UserProfile";
-import {Post, PostModel} from "./contracts/Post";
+import {CachedPosts, Crypto, Post, PostModel, UserProfileModel} from "./internal";
 import {Contract} from 'web3-eth-contract';
 
 export class Storage {
@@ -192,10 +190,4 @@ export enum KeyType {
 export interface Key {
     type: KeyType;
     value: number[] | number;
-}
-
-export interface CachedPosts {
-    parent: string;
-    blockNumber: number;
-    postAddresses: string[];
 }

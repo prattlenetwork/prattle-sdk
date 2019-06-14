@@ -1,6 +1,6 @@
 import {Contract} from 'web3-eth-contract';
 import {BehaviorSubject, Observable} from "rxjs";
-import {PrattleSDK} from "../index";
+import {PrattleSDK} from "../internal";
 
 export abstract class BaseContract {
     protected contract: Contract;

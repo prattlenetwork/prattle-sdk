@@ -1,16 +1,14 @@
 import Web3 from "web3";
-import {Key, Storage} from "./Storage";
-
-import {PrattleNetwork} from "./contracts/PrattleNetwork";
+import {Key, PrattleNetwork, Storage} from "./internal";
 import {BehaviorSubject, Observable} from "rxjs";
 
-export {BaseContract} from "./contracts/BaseContract";
-export {Post} from "./contracts/Post";
-export {PrattleNetwork} from "./contracts/PrattleNetwork";
-export {UserProfile} from "./contracts/UserProfile";
-export {Users} from "./contracts/Users";
+export {BaseContract} from "./internal";
+export {Post} from "./internal";
+export {PrattleNetwork} from "./internal";
+export {UserProfile} from "./internal";
+export {Users} from "./internal";
 
-export {Crypto} from "./Crypto";
+export {Crypto} from "./internal";
 
 
 export class PrattleSDK {

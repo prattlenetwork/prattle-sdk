@@ -1,8 +1,5 @@
-import {BaseContract, BaseModel} from "./BaseContract";
+import {BaseContract, BaseModel, CachedPosts, Post, PrattleSDK} from "../internal";
 import {BehaviorSubject, Observable} from "rxjs";
-import {Post} from "./Post";
-import {PrattleSDK} from "../index";
-import {CachedPosts} from "../Storage";
 
 const ABI = [
     {
